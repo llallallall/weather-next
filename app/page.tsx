@@ -1,113 +1,296 @@
+'use client'
+import { useState } from 'react'
 import Image from 'next/image'
+import './weather.css'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import {
+        faLocationDot,
+        faMagnifyingGlass,
+        faWater,
+        faWind,
+} from '@fortawesome/free-solid-svg-icons'
 
+type Result = {
+        base?: string
+        clouds?: Object
+        cod: number | string
+        coord?: WeatherCoord
+        dt?: number
+        id?: number
+        main?: WeatherMain
+        name?: string
+        sys?: WeaterGeo
+        timezone?: number
+        visibility?: number
+        weather?: WeatherArray[]
+        wind?: WeatherWind
+}
+
+type WeatherCoord = {
+        lat: number
+        lon: number
+}
+type WeaterGeo = {
+        country: string
+        id: number
+        sunrise: number
+        sunset: number
+        type: number
+}
+type WeatherMain = {
+        feels_like: number
+        grnd_level: number
+        humidity: number
+        pressure: number
+        sea_level: number
+        temp: number
+        temp_max: number
+        temp_min: number
+}
+type WeatherArray = {
+        description: string
+        icon: string
+        id: number
+        main: string
+}
+type WeatherWind = {
+        deg: number
+
+        speed: number
+}
 export default function Home() {
-  return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <div className="z-10 max-w-5xl w-full items-center justify-between font-mono text-sm lg:flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-          Get started by editing&nbsp;
-          <code className="font-mono font-bold">app/page.tsx</code>
-        </p>
-        <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:h-auto lg:w-auto lg:bg-none">
-          <a
-            className="pointer-events-none flex place-items-center gap-2 p-8 lg:pointer-events-auto lg:p-0"
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{' '}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className="dark:invert"
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
-        </div>
-      </div>
+        const [city, setCity] = useState('')
+        const [empty, setEmpty] = useState(false)
+        const [result, setResult] = useState({} as Result)
+        const [resultCode, setResultCode] = useState('')
+        const [weatherImg, setWeatherImg] = useState('')
+        const [temperature, setTemperature] = useState('')
+        const [desc, setDesc] = useState('')
+        const [humidity, setHumidity] = useState('')
+        const [wind, setWind] = useState('')
+        const reset = () => {
+                setCity('')
+                setResultCode('')
+                setWeatherImg('')
+                setHumidity('')
+                setWind('')
+        }
 
-      <div className="relative flex place-items-center before:absolute before:h-[300px] before:w-[480px] before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-[240px] after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700 before:dark:opacity-10 after:dark:from-sky-900 after:dark:via-[#0141ff] after:dark:opacity-40 before:lg:h-[360px] z-[-1]">
-        <Image
-          className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] dark:invert"
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
+        const handleOnKeyPress = (e: any) => {
+                if (e.key === 'Enter') {
+                        handleSearch() // Enter 입력이 되면 클릭 이벤트 실행
+                }
+        }
 
-      <div className="mb-32 grid text-center lg:max-w-5xl lg:w-full lg:mb-0 lg:grid-cols-4 lg:text-left">
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Docs{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Find in-depth information about Next.js features and API.
-          </p>
-        </a>
+        const apiUrl =
+                'https://api.openweathermap.org/data/2.5/weather?units=metric&appid=' +
+                process.env.NEXT_WEATHER_APIKEY +
+                '&q='
+        const handleSearch = () => {
+                console.log(city)
+                if (city.length < 1) {
+                        setEmpty(true)
+                        setTimeout(() => {
+                                setEmpty(false)
+                        }, 1500)
+                        return false
+                } else {
+                        fetch(apiUrl + city)
+                                .then((response) => response.json())
+                                .then((json) => {
+                                        setResult(json)
+                                        console.log(result)
+                                        if (result.weather) {
+                                                switch (
+                                                        result.weather[0].main
+                                                ) {
+                                                        case 'Clear':
+                                                                setWeatherImg(
+                                                                        '/images/clear'
+                                                                )
+                                                                break
+                                                        case 'Clouds':
+                                                                setWeatherImg(
+                                                                        '/images/cloud'
+                                                                )
+                                                                break
+                                                        case 'Mist':
+                                                                setWeatherImg(
+                                                                        '/images/mist'
+                                                                )
+                                                                break
+                                                        case 'Rain':
+                                                                setWeatherImg(
+                                                                        '/images/rain'
+                                                                )
+                                                                break
+                                                        case 'Snow':
+                                                                setWeatherImg(
+                                                                        '/images/snow'
+                                                                )
+                                                                break
+                                                        default:
+                                                                setWeatherImg(
+                                                                        ''
+                                                                )
+                                                }
+                                        }
+                                        setTimeout(() => {
+                                                setResultCode(
+                                                        json.cod.toString()
+                                                )
+                                        }, 1000)
 
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Learn{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Learn about Next.js in an interactive course with&nbsp;quizzes!
-          </p>
-        </a>
+                                        console.log(resultCode)
+                                })
+                }
 
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Templates{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Explore the Next.js 13 playground.
-          </p>
-        </a>
+                //결과 처리
 
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Deploy{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
-  )
+                if (resultCode == '404') {
+                        setTimeout(() => {
+                                reset()
+                        }, 1500)
+                } else if (resultCode == '200') {
+                        setTemperature(result.main?.temp + '℃')
+                        if (result.weather)
+                                setDesc(result.weather[0].description)
+                        setHumidity(result.main?.humidity + '%')
+                        setWind(result.wind?.speed + 'km/h')
+                }
+        }
+        return (
+                <div
+                        className={`container relative w-[400px]  bg-white py-[28px] px-[32px] overflow-hidden rounded-[18px] 
+                        ${empty ? 'animate-bounce' : ''}   
+                        ${
+                                resultCode === '200'
+                                        ? 'h-[605px]'
+                                        : resultCode === '400'
+                                        ? 'h-[455px]'
+                                        : 'h-[105px]'
+                        }   
+                        `}>
+                        <div
+                                className="search-box w-full min-h-min 
+                        flex items-center justify-center text-[28px]">
+                                <FontAwesomeIcon
+                                        icon={faLocationDot}
+                                        // className="absolute text-primary text-[28px]"
+                                />
+                                <input
+                                        type="text"
+                                        value={city}
+                                        onChange={(e: any) => {
+                                                e.preventDefault()
+                                                setCity(
+                                                        e.target
+                                                                ?.value as string
+                                                )
+                                        }}
+                                        onFocus={reset}
+                                        onKeyPress={handleOnKeyPress}
+                                        placeholder="Enter your location"
+                                        className="text-primary w-[80%] text-[24px] font-medium uppercase pl-[32px] 
+                placeholder:text-[20px]  placeholder:text-primary  placeholder:font-medium placeholder:capitalize
+                "
+                                />
+                                <button
+                                        className="cursor-pointer w-[50px] h-[50px] bg-secondary rounded-full text-[22px]
+                                transition duration-500 ease-linear
+                                hover:bg-primary hover:text-white"
+                                        onClick={handleSearch}>
+                                        <FontAwesomeIcon
+                                                icon={faMagnifyingGlass}
+                                        />
+                                </button>
+                        </div>
+                        <div
+                                className={`not-found w-full text-center mt-[30px]   ${
+                                        resultCode == '404'
+                                                ? 'animate-fadeIn'
+                                                : 'scale-0 opacity-0 hidden'
+                                }`}>
+                                <div className="w-[70%] mt-[10px] mx-auto">
+                                        <Image
+                                                src="/images/page-not-found.jpg"
+                                                alt="404"
+                                                width={600}
+                                                height={600}
+                                                style={{ objectFit: 'contain' }}
+                                                loading="lazy"
+                                        />
+                                </div>
+                                <p className="text-primary text-[22px] font-medium mt-[30px]">
+                                        Oops! Invalid location :/
+                                </p>
+                        </div>
+                        <div
+                                className={`weather-box text-center  ${
+                                        resultCode == '200'
+                                                ? 'animate-fadeIn block'
+                                                : 'scale-0 opacity-0 hidden'
+                                }`}>
+                                <div className="w-[60%] mx-auto mt-[30px]">
+                                        {resultCode == '200' &&
+                                                weatherImg.length > 0 && (
+                                                        <Image
+                                                                src={
+                                                                        weatherImg +
+                                                                        '.PNG'
+                                                                }
+                                                                alt="Weather"
+                                                                width={600}
+                                                                height={600}
+                                                                style={{
+                                                                        objectFit: 'contain',
+                                                                }}
+                                                                priority={false}
+                                                        />
+                                                )}
+                                </div>
+                                <p className="temperature text-primary text-[4rem] font-extrabold mt-[30px] -ml-[16px]">
+                                        {temperature}
+                                </p>
+                                <p className="description text-primary text-[22px] capitalize">
+                                        {desc}
+                                </p>
+                        </div>
+                        <div
+                                className={`weather-details w-full  justify-between mt-[30px]   ${
+                                        resultCode == '200'
+                                                ? 'flex animate-fadeIn'
+                                                : 'scale-0 opacity-0 hidden'
+                                }`}>
+                                <div className="humidity flex items-center w-[50%] h-[100px] pl-[20px] justify-start">
+                                        <FontAwesomeIcon
+                                                icon={faWater}
+                                                className="text-primary text-[26px] mr-[10px] mt-[6px]"
+                                        />
+                                        <div className="text text-primary font-medium">
+                                                <span className="text-[22px] ">
+                                                        {humidity}
+                                                </span>
+                                                <p className="text-[14px] ">
+                                                        Humidity
+                                                </p>
+                                        </div>
+                                </div>
+                                <div className="wind flex items-center w-[50%] h-[100px] pr-[20px] justify-end">
+                                        <FontAwesomeIcon
+                                                icon={faWind}
+                                                className="text-primary text-[26px] mr-[10px] mt-[6px]"
+                                        />
+                                        <div className="text text-primary font-medium">
+                                                <span className="text-[22px] ">
+                                                        {wind}
+                                                </span>
+                                                <p className="text-[14px] ">
+                                                        Wind Speed
+                                                </p>
+                                        </div>
+                                </div>
+                        </div>
+                </div>
+        )
 }
